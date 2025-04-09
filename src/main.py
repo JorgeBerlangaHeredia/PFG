@@ -1,195 +1,160 @@
-# --- main.py (Fase 4: Sin Correlación Equipo, Añadir Pasos 7 y 8) ---
+# --- INICIO DEL ARCHIVO main.py (ubicado en src/) ---
 
-import pandas as pd
-from pathlib import Path
 import sys
-import matplotlib.pyplot as plt # Para visualizaciones
-import seaborn as sns       # Para heatmap
-from collections import defaultdict # Para análisis de sensibilidad
+import os
+import pandas as pd
 
-# --- Importa tus clases ---
+# --- Ajuste de Rutas para Datos/ desde src/ ---
+script_dir = os.path.dirname(os.path.abspath(__file__))
+carpeta_padre = os.path.dirname(script_dir)
+datos_dir = os.path.join(carpeta_padre, 'Datos')
+ARCHIVO_JUGADORES = os.path.join(datos_dir, "NBA_2024_per_game(03-01-2024).csv")
+ARCHIVO_REALES = os.path.join(datos_dir, "ruta_reales_csv.csv")
+
+# Importa las clases
 try:
     from CargaDatos import CargaDatos
     from IndicadoresDesempeño import IndicadoresDesempeño
-    from Alineación import Alineación # Asume versión Multi-Pos
-    from OptimizadorAlineacion import OptimizadorAlineacion # Asume versión Solo 5 Titulares
-except ImportError as e: print(f"Error importando clases: {e}"); sys.exit(1)
+    from OptimizadorAlineacion import OptimizadorAlineacion
+    from AnalisisResultados import AnalisisResultados
+except ImportError as e: sys.exit(f"Error importando clase: {e}")
 
-# --- Funciones helper ---
-def obtener_eleccion_usuario_metrica():
-    valid_choices = {'1': ('Ofensiva', 'Off_Rating_Simple'), '2': ('Defensiva', 'Def_Rating_Placeholder'), '3': ('Equilibrada', 'EFF/MIN')}
-    prompt = "\nSeleccione métrica para optimizar y comparar:\n1. Ofensiva\n2. Defensiva\n3. Equilibrada\nIngrese número: "
-    while True:
-        choice = input(prompt).strip();
-        if choice in valid_choices: return valid_choices[choice]
-        else: print("Entrada inválida.")
+# --- Configuración ---
+MIN_G = 20
+MIN_MP_TOTAL = 500
+METRICAS_REFERENCIA = {
+    'ofensiva': 'PTS_Total', 'defensiva': 'DEF_VOLUME_Total', 'equilibrada': 'EFF/MIN',
+    'eficiencia_total': 'EFF', 'rating_ofensivo': 'Off_Rating_Simple'
+}
+OPCIONES_USUARIO = {1: 'ofensiva', 2: 'defensiva', 3: 'equilibrada'}
+METRICAS_COMPARACION = ['PTS_Total', 'AST_Total', 'TRB_Total', 'STL_Total', 'BLK_Total', 'DEF_VOLUME_Total', 'EFF', 'EFF/MIN', 'Off_Rating_Simple', 'Net_Rating_Simple']
+METRICAS_COMPARACION_VISUAL = ['PTS_Total', 'AST_Total', 'TRB_Total', 'STL_Total', 'BLK_Total', 'DEF_VOLUME_Total', 'EFF']
+METRICAS_SENSIBILIDAD = {'Ofensivo (Puntos)': 'PTS_Total', 'Defensivo (Volumen)': 'DEF_VOLUME_Total', 'Equilibrado (EFF/MIN)': 'EFF/MIN', 'Eficiencia Total (EFF)': 'EFF', 'Rating Ofensivo Simple': 'Off_Rating_Simple'}
 
-# Ya no necesitamos cargar_datos_equipo si eliminamos el Paso 6 (OE-2 por correlación)
+def main():
+    """Orquesta el proceso, mostrando principalmente la comparación visual."""
+    print("--- Iniciando Sistema de Optimización y Análisis de Alineaciones NBA ---")
+    print(f"--- Filtros aplicados: G >= {MIN_G}, MP_Total >= {MIN_MP_TOTAL} ---")
 
-def cargar_datos_alineaciones_reales(ruta_archivo_reales):
-     """Carga datos de alineaciones reales."""
-     print(f"\nIntentando cargar alineaciones reales desde: {ruta_archivo_reales}")
-     try:
-        df = pd.read_csv(ruta_archivo_reales)
-        if 'Tm' not in df.columns or len(df.columns) < 6:
-             print("  Error: Formato inesperado (faltan columnas 'Tm' o jugadores).")
-             return None
-        print(f"  Alineaciones reales cargadas ({len(df)} equipos).")
-        return df
-     except FileNotFoundError: print(f"  Advertencia: Archivo no encontrado en {ruta_archivo_reales}. Se omitirá comparación OE-3/OE-5."); return None
-     except Exception as e: print(f"  Error al cargar alineaciones reales: {e}."); return None
-# --- Fin Funciones Helper ---
-
-
-def run_pipeline_combinado():
-    print("--- Iniciando Pipeline (Enfoque Combinado - Sin Correlación Equipo) ---")
-
-    # --- PASO 1 & 2: Carga, Preproc, KPIs ---
-    print("\n[PASO 1 & 2: Carga, Preprocesamiento y Cálculo de KPIs...]")
-    datos_con_metricas = None; datos_limpios = None
+    # --- PASO 1: Carga y Preprocesamiento ---
+    print("\n[PASO 1] Cargando y Preprocesando Datos...")
+    cargador = CargaDatos(); datos_limpios = None; datos_limpios_con_tm = None
     try:
-        script_dir = Path(__file__).resolve().parent; nombre_carpeta_csv = 'Datos'
-        ruta_csv = str(script_dir.parent / nombre_carpeta_csv / 'NBA_2024_per_game(03-01-2024).csv')
-        print(f"Intentando cargar desde: {ruta_csv}")
-        cargador = CargaDatos(); cargador.cargar_datos(ruta_csv)
-        if cargador.datos is None: raise FileNotFoundError(f"Fallo carga {ruta_csv}")
-        cargador.preprocesar_datos(); datos_limpios = cargador.obtener_datos_limpiados()
-        if datos_limpios is None: raise RuntimeError("Preproc falló.")
-        calculador_kpi = IndicadoresDesempeño(datos_limpios); datos_con_metricas = calculador_kpi.calcular_metricas()
-        if datos_con_metricas is None: raise RuntimeError("KPIs falló.")
-        if datos_con_metricas.index.name != 'Player': datos_con_metricas.set_index('Player', inplace=True)
-        print("Pasos 1 y 2 completados.")
-    except Exception as e: print(f"Error crítico en Pasos 1/2: {e}"); sys.exit(1)
+        cargador.cargar_datos(ARCHIVO_JUGADORES)
+        if cargador.datos is None: sys.exit("Error carga datos")
+        cargador.preprocesar_datos()
+        datos_limpios = cargador.obtener_datos_limpiados()
+        if datos_limpios is None or datos_limpios.empty: sys.exit("Error preprocesamiento")
+        print(" -> Datos cargados y preprocesados.")
+        datos_limpios_con_tm = datos_limpios.copy()
+    except Exception as e: sys.exit(f"Error Paso 1: {e}")
 
-    # --- SELECCIÓN MÉTRICA PRINCIPAL ---
-    nombre_enfoque, metrica_principal = obtener_eleccion_usuario_metrica()
-    print(f"\nEnfoque principal seleccionado: {nombre_enfoque} (Métrica: {metrica_principal})")
-    if metrica_principal not in datos_con_metricas.columns: print(f"Error: Métrica '{metrica_principal}' no existe."); sys.exit(1)
-
-    # --- Definir umbrales ---
-    min_games_played = 15; min_total_minutes = 300
-    print(f"Filtros aplicados: G >= {min_games_played}, MP_Total >= {min_total_minutes}")
-
-    # --- PASO 3: Generación Alineación Simple/Greedy (Baseline) ---
-    print(f"\n[PASO 3: Generando Alineación Simple/Greedy ({nombre_enfoque}) - (Multi-Pos)]")
-    titulares_simple = None; suplentes_simple = None
+    # --- PASO 2: Cálculo de Indicadores ---
+    print("\n[PASO 2] Calculando Indicadores de Desempeño...")
+    datos_con_metricas_idx = None
     try:
-        alineador_simple = Alineación(datos_con_metricas, tipo_ali=nombre_enfoque.lower(), min_g=min_games_played, min_mp_total=min_total_minutes)
-        titulares_simple, suplentes_simple = alineador_simple.crear_alineacion()
-        alineador_simple.mostrar_alineacion_df(titulares_simple, suplentes_simple)
-    except Exception as e: print(f"Error en Paso 3 (Alineación Simple): {e}")
+        calculador = IndicadoresDesempeño(datos_limpios)
+        datos_con_metricas_df = calculador.calcular_metricas()
+        if datos_con_metricas_df is None or datos_con_metricas_df.empty: sys.exit("Error cálculo métricas")
+        if METRICAS_REFERENCIA['defensiva'] not in datos_con_metricas_df.columns: print(f"ADVERTENCIA: Métrica defensiva '{METRICAS_REFERENCIA['defensiva']}' no encontrada.")
+        if 'Player' in datos_con_metricas_df.columns: datos_con_metricas_idx = datos_con_metricas_df.set_index('Player')
+        elif datos_con_metricas_df.index.name == 'Player': datos_con_metricas_idx = datos_con_metricas_df
+        else: temp_df=datos_con_metricas_df.reset_index(); datos_con_metricas_idx=temp_df.set_index('Player') if 'Player' in temp_df.columns else sys.exit("Error índice Player")
+        print(" -> Indicadores calculados.")
+    except Exception as e: sys.exit(f"Error Paso 2: {e}")
 
-    # --- PASO 4: Optimización Quinteto Titular (PuLP) ---
-    print(f"\n[PASO 4: Optimizando Quinteto Titular ({nombre_enfoque}, Métrica: {metrica_principal}) - (PuLP)]")
-    quinteto_optimo_df = None; valor_optimo_titulares = None
-    optimizador = None # Inicializar por si falla la instanciación
-    try:
-        optimizador = OptimizadorAlineacion(datos_con_metricas, min_g=min_games_played, min_mp_total=min_total_minutes)
-        quinteto_optimo_df, valor_optimo_titulares = optimizador.optimizar_quinteto(metrica_objetivo=metrica_principal)
-        if quinteto_optimo_df is not None:
-            optimizador.visualizar_alineacion_basico(quinteto_optimo_df, valor_optimo_titulares, metrica_principal)
-        else: print("  No se encontró alineación óptima.")
-    except ImportError: print("Error: PuLP no instalado."); sys.exit(1)
-    except Exception as e: print(f"Error en Paso 4 (Optimización Titulares): {e}")
-
-    # --- PASO 5: Comparación Numérica Titulares (Simple vs Óptimo) ---
-    print(f"\n[PASO 5: Comparando Titulares Simple vs. Óptimo para '{metrica_principal}']")
-    # ... (Código de comparación como antes) ...
-    if quinteto_optimo_df is not None and titulares_simple is not None:
+    # --- PASO 3: Selección de Métrica Principal ---
+    print("\n[PASO 3] Selección de Métrica Principal...")
+    opciones_validas_usuario = {}
+    print("Elige el enfoque para optimizar:")
+    for num, clave in OPCIONES_USUARIO.items():
+        metrica = METRICAS_REFERENCIA.get(clave)
+        if metrica and metrica in datos_con_metricas_idx.columns and pd.api.types.is_numeric_dtype(datos_con_metricas_idx[metrica]):
+            print(f"  {num}: {clave.capitalize()} ('{metrica}')")
+            opciones_validas_usuario[num] = clave
+        else: print(f"  {num}: {clave.capitalize()} (NO DISPONIBLE)")
+    if not opciones_validas_usuario: sys.exit("Error: Ninguna métrica principal válida.")
+    metrica_principal = None
+    while metrica_principal is None:
         try:
-             # ... (Lógica de comparación y print de mejora_tit) ...
-             jugadores_optimos_tit = quinteto_optimo_df['Player'].tolist()
-             jugadores_simple_tit = [p for p in titulares_simple.values() if p is not None]
-             if len(jugadores_optimos_tit) == 5 and len(jugadores_simple_tit) == 5:
-                  missing_opt_t=[p for p in jugadores_optimos_tit if p not in datos_con_metricas.index]
-                  missing_simple_t=[p for p in jugadores_simple_tit if p not in datos_con_metricas.index]
-                  if not missing_opt_t and not missing_simple_t:
-                       valor_total_simple_tit = datos_con_metricas.loc[jugadores_simple_tit, metrica_principal].sum()
-                       print(f"  - Valor Total Titulares ({metrica_principal}) - Óptimo (PuLP): {valor_optimo_titulares:.2f}")
-                       print(f"  - Valor Total Titulares ({metrica_principal}) - Simple (Greedy): {valor_total_simple_tit:.2f}")
-                       mejora_tit = valor_optimo_titulares - valor_total_simple_tit
-                       print(f"  - Mejora Titulares por Optimización: {mejora_tit:.2f}")
-                       if abs(mejora_tit) < 1e-6: print("    (Nota: Titulares coinciden o son numéricamente equivalentes).")
-                       elif mejora_tit < -1e-6: print("    (Advertencia: Titulares Simples superan a Óptimos - revisar).")
-                  else: print("  - No se puede comparar (faltan datos jugadores).")
-             else: print(f"  - No se puede comparar (Simple: {len(jugadores_simple_tit)}, Óptimo: {len(jugadores_optimos_tit)}).")
-        except Exception as e: print(f"  - Error comparando titulares: {e}")
-    else: print("  - No se puede comparar (falta una alineación).")
+            choice = int(input(f"Ingresa número ({', '.join(map(str, opciones_validas_usuario.keys()))}): "))
+            if choice in opciones_validas_usuario:
+                metrica_principal = METRICAS_REFERENCIA[opciones_validas_usuario[choice]]
+                print(f" -> Optimizando por: '{metrica_principal}'")
+            else: print("Número no válido.")
+        except ValueError: print("Entrada inválida.")
 
+    # --- PASO 4: Optimización y Visualización Básica ---
+    print(f"\n[PASO 4] Optimizando Alineación para '{metrica_principal}'...")
+    quinteto_optimo_df = None; valor_optimo_titulares = None; suplentes_optimo_dict = None; optimizador = None
+    try:
+        optimizador = OptimizadorAlineacion(datos_con_metricas_idx, min_g=MIN_G, min_mp_total=MIN_MP_TOTAL)
+        quinteto_optimo_df, valor_optimo_titulares, suplentes_optimo_dict = optimizador.optimizar_quinteto(metrica_objetivo=metrica_principal)
+        if quinteto_optimo_df is not None and valor_optimo_titulares is not None and suplentes_optimo_dict is not None:
+            print(" -> Optimización completada.")
+            # <<< MANTENER LA VISUALIZACIÓN DE LA ALINEACIÓN GENERADA >>>
+            optimizador.visualizar_alineacion_completa(quinteto_optimo_df, valor_optimo_titulares, metrica_principal, suplentes_optimo_dict)
+            if 'Player' not in quinteto_optimo_df.columns and quinteto_optimo_df.index.name == 'Player': quinteto_optimo_df = quinteto_optimo_df.reset_index()
+        else: print(" -> No se pudo generar la alineación completa.")
+    except Exception as e: print(f"Error Paso 4: {e}")
 
-    # --- PASO 6 (antes 7): Comparación vs. Realidad (OE-3 / OE-5) ---
-    print("\n[PASO 6: Comparación con Alineaciones Reales (OE-3, OE-5)]")
-    # >>>>> ¡¡¡ ACTUALIZA ESTA RUTA !!! <<<<<
-    ruta_reales_csv = 'Datos/alineaciones_reales_nba_2024_placeholder.csv' # EJEMPLO
-    df_reales = cargar_datos_alineaciones_reales(ruta_reales_csv)
-    if df_reales is not None and quinteto_optimo_df is not None:
-        try:
-            equipo_ejemplo = 'DEN' # Cambia equipo
-            lineup_real_series = df_reales[df_reales['Tm'] == equipo_ejemplo]
-            if not lineup_real_series.empty:
-                 lineup_real_series = lineup_real_series.iloc[0]
-                 col_jugadores_reales = [c for c in df_reales.columns if c != 'Tm']
-                 jugadores_reales_list = set(lineup_real_series[col_jugadores_reales].dropna().astype(str))
-                 jugadores_optimos_list = set(quinteto_optimo_df['Player'])
-                 interseccion = len(jugadores_optimos_list.intersection(jugadores_reales_list)); union = len(jugadores_optimos_list.union(jugadores_reales_list)); jaccard = interseccion / union if union > 0 else 0
-                 print(f"\nComparación para {equipo_ejemplo}:")
-                 print(f"  Quinteto Óptimo ({metrica_principal}): {sorted(list(jugadores_optimos_list))}")
-                 print(f"  Quinteto Real Frecuente: {sorted(list(jugadores_reales_list))}")
-                 print(f"  Jugadores en común: {interseccion}"); print(f"  Índice de Jaccard: {jaccard:.2f}")
-                 jugadores_reales_validos = [p for p in jugadores_reales_list if p in datos_con_metricas.index]
-                 if len(jugadores_reales_validos) == len(jugadores_reales_list) and len(jugadores_reales_validos) > 0 :
-                      valor_real = datos_con_metricas.loc[list(jugadores_reales_validos), metrica_principal].sum()
-                      print(f"  Valor ({metrica_principal}) Óptimo: {valor_optimo_titulares:.2f}"); print(f"  Valor ({metrica_principal}) Real: {valor_real:.2f}"); print(f"  Mejora Teórica Óptimo vs Real: {valor_optimo_titulares - valor_real:.2f}")
-                 else: print(f"  No se comparan valores (faltan datos jugadores reales: {len(jugadores_reales_validos)}/{len(jugadores_reales_list)} encontrados).")
-            else: print(f"  No hay datos reales para {equipo_ejemplo}.")
-        except Exception as e: print(f"  Error comparando con reales: {e}")
+    # --- PASO 5: Carga de Alineaciones Reales ---
+    print("\n[PASO 5] Cargando Alineaciones Reales...")
+    df_reales = None
+    try:
+        df_reales = pd.read_csv(ARCHIVO_REALES)
+        expected_cols = ['Tm', 'Player1', 'Player2', 'Player3', 'Player4', 'Player5']
+        if not all(col in df_reales.columns for col in expected_cols): print("Advertencia: Formato incorrecto archivo reales."); df_reales = None
+        elif df_reales.empty: print("Advertencia: Archivo reales vacío."); df_reales = None
+        else: print(f" -> {len(df_reales)} alineaciones reales cargadas.")
+    except FileNotFoundError: print(f"Advertencia: Archivo reales no encontrado en '{datos_dir}'.")
+    except Exception as e: print(f"Error carga reales: {e}")
+
+    # --- PASO 6: Análisis (Ejecución interna, impresión controlada) ---
+    print("\n[PASO 6] Realizando Análisis...")
+    if quinteto_optimo_df is None or valor_optimo_titulares is None or optimizador is None:
+        print(" -> Omitiendo análisis (falta quinteto óptimo u optimizador).")
     else:
-         print("  Se omite comparación con reales (falta archivo o quinteto óptimo).")
+        try:
+            metricas_comp_real_existentes = [m for m in METRICAS_COMPARACION if m in datos_con_metricas_idx.columns]
+            metricas_vis_existentes = [m for m in METRICAS_COMPARACION_VISUAL if m in datos_con_metricas_idx.columns]
+            metricas_sens_existentes = {n: m for n, m in METRICAS_SENSIBILIDAD.items() if m in datos_con_metricas_idx.columns}
 
+            analizador = AnalisisResultados(
+                datos_con_metricas=datos_con_metricas_idx, metrica_principal=metrica_principal,
+                quinteto_optimo_df=quinteto_optimo_df, valor_optimo_titulares=valor_optimo_titulares,
+                df_reales=df_reales, optimizador=optimizador, datos_limpios_con_tm=datos_limpios_con_tm
+            )
 
-    # --- PASO 7 (antes 8): Análisis de Sensibilidad (OE-6) ---
-    print("\n[PASO 7: Análisis de Sensibilidad del Optimizador (OE-6)]")
-    print("Generando quintetos óptimos para diferentes métricas objetivo...")
-    resultados_sensibilidad = {}
-    metricas_sensibilidad = {'Ofensiva': 'Off_Rating_Simple','Defensiva': 'Def_Rating_Placeholder','Equilibrada': 'EFF/MIN'}
+            # 6.a) Comparación Numérica (Ejecutar pero no imprimir tabla aquí)
+            if df_reales is not None and metricas_comp_real_existentes:
+                print(" -> Ejecutando comparación numérica...")
+                # La impresión de la tabla detallada se comentó dentro del método
+                analizador.ejecutar_comparacion_optimo_vs_reales(metricas_comp_real_existentes)
+            # else: # Mensajes de omisión ya manejados
 
-    # Reutilizar instancia del optimizador si se creó correctamente en Paso 4
-    if optimizador:
-        for nombre_enf, metrica_sens in metricas_sensibilidad.items():
-             print(f"\n--- Optimizando para Enfoque: {nombre_enf} (Métrica: {metrica_sens}) ---")
-             if metrica_sens not in datos_con_metricas.columns: print(f"  Métrica no encontrada."); continue
-             try:
-                  # Usar la instancia existente de optimizador
-                  q_sens_df, v_sens = optimizador.optimizar_quinteto(metrica_objetivo=metrica_sens)
-                  if q_sens_df is not None:
-                       resultados_sensibilidad[nombre_enf] = q_sens_df['Player'].tolist()
-                       print(f"  Quinteto: {sorted(resultados_sensibilidad[nombre_enf])} (Valor: {v_sens:.2f})")
-                       # optimizador.visualizar_alineacion_basico(q_sens_df, v_sens, metrica_sens) # Opcional
-                  else: resultados_sensibilidad[nombre_enf] = []
-             except Exception as e: print(f"  Error optimizando para {nombre_enf}: {e}"); resultados_sensibilidad[nombre_enf] = []
+            # 6.b) Análisis de Sensibilidad (Ejecutar pero no imprimir detalles aquí)
+            if metricas_sens_existentes:
+                print(" -> Ejecutando análisis de sensibilidad...")
+                # La impresión detallada se comentó dentro del método
+                analizador.ejecutar_analisis_sensibilidad(metricas_sens_existentes)
+            # else: # Mensajes de omisión ya manejados
 
-        # Análisis de apariciones
-        if resultados_sensibilidad:
-             print("\nAnálisis Apariciones (Sensibilidad):")
-             apariciones = defaultdict(int); jugadores_totales = set()
-             for quinteto in resultados_sensibilidad.values():
-                 jugadores_totales.update(quinteto)
-                 for jugador in quinteto: apariciones[jugador] += 1
-             print("  Jugadores en >1 quinteto óptimo:"); [print(f"    - {j}: {c} veces") for j, c in sorted(apariciones.items(), key=lambda item: item[1], reverse=True) if c > 1] or print("    (Ninguno)")
-             print(f"\n  Total jugadores únicos en quintetos: {len(jugadores_totales)}")
-        print("Análisis de Sensibilidad Completado.")
-    else: print("  Se omite sensibilidad (optimizador no disponible por error previo).")
+            # 6.c) Visualización Gráfica (Omitida)
+            # analizador.generar_visualizaciones() # LLAMADA ELIMINADA
 
+            # 6.d) Visualización Comparativa Estilo FIFA (MANTENER)
+            if df_reales is not None and metricas_vis_existentes:
+                # La impresión se hace DENTRO de este método
+                analizador.visualizar_comparacion_fifa_style(metricas_vis_existentes)
+            elif df_reales is None: print("\n--- Omitiendo Comparación Visual (datos reales no disponibles) ---")
+            else: print("\n--- Omitiendo Comparación Visual (métricas no disponibles) ---")
 
-    # --- PASO 8 (antes 9): Visualización Final (OE-4) ---
-    print("\n[PASO 8: Visualización (OE-4)]")
-    print("  (Implementar gráficos/tablas finales aquí)")
-    # Ejemplo: Podrías generar un gráfico de barras de la 'Mejora Teórica Óptimo vs Real'
-    # si haces la comparación para varios equipos.
+        except Exception as e: print(f"Error inesperado durante el análisis: {e}")
 
+    print("\n--- Proceso Finalizado ---")
 
-    print("\n--- Pipeline Completado ---")
-
-# --- Ejecutar el pipeline ---
 if __name__ == "__main__":
-    run_pipeline_combinado()
+    main()
+
+# --- FIN DEL ARCHIVO main.py (ubicado en src/) ---
