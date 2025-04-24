@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="es">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <title>Resultados de Optimización</title>
+    {# Enlazar el CSS externo #}
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <h1>Resultados de Optimización</h1>
+    {# Mostrar el enfoque usado y un enlace para volver #}
+    {# Usar 'or' como fallback si las variables no llegan #}
+    <p><strong>Enfoque Seleccionado:</strong> {{ enfoque_desc or 'No especificado' }} (Métrica: {{ metrica_principal or 'No especificada' }})</p>
+    <p><a href="{{ url_for('pagina_carga') }}">Volver a cargar otro archivo</a></p>
+
+    {# --- Manejo de Errores --- #}
+    {% if error %}
+        <div class="alert alert-error">
+            <h2>Error Durante el Procesamiento</h2>
+            <p>Ocurrió un error al generar la alineación:</p>
+            <pre><code>{{ error }}</code></pre>
+        </div>
+    {% else %} {# Si no hubo error, mostrar los resultados #}
+
+        {# --- Sección 1: Alineación Generada --- #}
+        <h2>Alineación Generada</h2>
+
+        {# Mostrar TITULARES #}
+        {% if quinteto_opt_df is defined and quinteto_opt_df is not none and not quinteto_opt_df.empty %}
+            <h3>Titulares Óptimos (Valor Total {{ metrica_principal or 'Objetivo' }}: {{ '%.2f'|format(valor_optimo) if valor_optimo is number else 'N/A' }})</h3>
+            {# Intentar convertir a HTML, manejar posible error si no es DataFrame #}
+            {% set df_html = None %}
+            {% if quinteto_opt_df is mapping or quinteto_opt_df is sequence %}
+                {% set df_html = quinteto_opt_df.to_html(classes='table', index=False, border=0) | safe %}
+            {% endif %}
+            {% if df_html %}
+                {{ df_html }}
+            {% else %}
+                 <p class="error">Error al mostrar tabla de titulares (¿formato inesperado?).</p>
+                 <p>Datos recibidos: {{ quinteto_opt_df }}</p>
+            {% endif %}
+        {% else %}
+            <p class="error">No se pudo generar o recibir el quinteto titular óptimo.</p>
+        {% endif %}
+
+        {# Mostrar SUPLENTES #}
+        {% if suplentes_dict is defined and suplentes_dict is mapping and suplentes_dict %}
+            <h3>Suplentes (Greedy)</h3>
+             <table>
+                 <thead>
+                     <tr><th>Posición</th><th>Jugador Suplente</th></tr>
+                 </thead>
+                 <tbody>
+                 {% for pos, jugador in suplentes_dict.items() %}
+                      <tr>
+                          <td>{{ pos }}</td>
+                          <td>{{ jugador if jugador else 'N/A' }}</td>
+                      </tr>
+                 {% endfor %}
+                 </tbody>
+             </table>
+             {# Mostrar tabla con MÉTRICAS de suplentes si existe y no está vacío #}
+             {% if suplentes_df is defined and suplentes_df is not none and not suplentes_df.empty %}
+                <h4>Métricas de Suplentes Seleccionados</h4>
+                {% set sdf_html = None %}
+                {% if suplentes_df is mapping or suplentes_df is sequence %}
+                    {% set sdf_html = suplentes_df.to_html(classes='table', index=False, border=0) | safe %}
+                {% endif %}
+                {% if sdf_html %}
+                     {{ sdf_html }}
+                {% else %}
+                    <p class="error">Error al mostrar tabla de métricas de suplentes.</p>
+                {% endif %}
+             {% else %}
+                <p><i>(No hay datos de métricas para los suplentes)</i></p>
+             {% endif %} {# Fin if suplentes_df #}
+        {% else %}
+            <p>No se generaron o recibieron datos de suplentes.</p>
+        {% endif %} {# Fin if suplentes_dict #}
+
+        {# --- Sección 2: Comparación Visual --- #}
+        <div class="comparison-container">
+            <h2>Comparación Visual vs Equipos Reales</h2>
+
+            {# Verificar si hay datos para la comparación #}
+            {% if comparacion_visual_data is defined and comparacion_visual_data is mapping and comparacion_visual_data %}
+                 <p>(Valores 0-100 basados en Min/Max global)</p>
+                {% for equipo, metricas_equipo in comparacion_visual_data.items() %}
+                    <h3>Óptimo vs. {{ equipo }}</h3>
+                    <table class="comparison-table">
+                        <thead>
+                            <tr><th>Métrica</th><th>Óptimo</th><th>Real</th></tr>
+                        </thead>
+                        <tbody>
+                        {# Iterar sobre cada métrica para este equipo #}
+                        {% for data_metrica in metricas_equipo %}
+                            {# --- Comprobación Robusta --- #}
+                            {# Verifica si data_metrica es secuencia, longitud 3, y elementos 1 y 2 son números #}
+                            {% if data_metrica is sequence and data_metrica | length == 3 and data_metrica[1] is number and data_metrica[2] is number %}
+                                <tr>
+                                    <td>{{ data_metrica[0] }}</td> {# Nombre métrica #}
+                                    <td>
+                                        <span class="value">({{ data_metrica[1] }})</span>
+                                        {# Multiplica por 2 para el ancho, convierte a entero #}
+                                        <div class="bar" style="width: {{ (data_metrica[1] * 2) | int }}px;"></div>
+                                    </td>
+                                    <td>
+                                        <span class="value">({{ data_metrica[2] }})</span>
+                                        <div class="bar" style="width: {{ (data_metrica[2] * 2) | int }}px;"></div>
+                                    </td>
+                                </tr>
+                            {% else %}
+                                {# Mostrar fila de error si los datos no son correctos #}
+                                <tr>
+                                    <td>{{ data_metrica[0] if data_metrica is sequence and data_metrica|length > 0 else 'Error Métrica' }}</td>
+                                    <td colspan="2" class="error">Error en datos de comparación para esta métrica.</td>
+                                </tr>
+                            {% endif %}
+                            {# --- Fin Comprobación Robusta --- #}
+                        {% endfor %} {# Fin bucle métricas #}
+                        </tbody>
+                    </table>
+                {% endfor %} {# Fin bucle equipos #}
+            {% else %}
+                <p>No hay datos de comparación visual disponibles (asegúrate de que exista y sea accesible 'Datos/ruta_reales_csv.csv' con el formato correcto).</p>
+            {% endif %} {# Fin if comparacion_visual_data #}
+        </div>
+
+    {% endif %} {# Fin del if not error #}
+
+</body>
+</html>
