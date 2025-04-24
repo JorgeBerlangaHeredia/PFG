@@ -1,0 +1,140 @@
+/* --- Paso 2: Estilos del Formulario --- */
+
+.form-group {
+    margin-bottom: 20px; /* Espacio vertical entre cada grupo label/input */
+}
+
+label {
+    display: block; /* Hace que la etiqueta ocupe su propia línea */
+    margin-bottom: 5px; /* Pequeño espacio entre etiqueta y campo */
+    font-weight: bold; /* Poner etiquetas en negrita */
+    color: #495057; /* Un gris oscuro para las etiquetas */
+}
+
+/* Estilos comunes para campos de texto, número, archivo y selector */
+input[type="file"],
+input[type="number"],
+select {
+    display: block; /* Asegurar que ocupen el ancho disponible */
+    width: 100%; /* Ocupar todo el ancho del contenedor */
+    max-width: 400px; /* Limitar el ancho máximo para que no sea gigante */
+    padding: 10px;
+    border: 1px solid #ced4da; /* Borde gris estándar */
+    border-radius: 4px; /* Bordes redondeados */
+    box-sizing: border-box; /* Padding y borde incluidos en el width */
+    font-size: 0.95em;
+    background-color: #fff; /* Fondo blanco */
+}
+
+/* Estilo específico para el input de archivo (a veces necesita ajustes) */
+input[type="file"] {
+    padding: 8px; /* Un poco menos de padding vertical */
+}
+
+/* Estilos para el botón de envío */
+input[type="submit"] {
+    display: inline-block; /* Permitir que no ocupe todo el ancho */
+    padding: 12px 25px; /* Padding generoso */
+    background-color: #007bff; /* Azul primario */
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 1.05em;
+    font-weight: bold;
+    transition: background-color 0.2s ease;
+}
+
+input[type="submit"]:hover {
+    background-color: #0056b3; /* Azul más oscuro al pasar el ratón */
+}
+
+/* --- Paso 3: Estilos para Página de Resultados --- */
+
+/* Estilos generales para tablas en la página de resultados */
+table {
+    border-collapse: collapse; /* Une los bordes de las celdas */
+    width: 95%; /* Que no ocupe el 100% exacto */
+    margin: 25px auto; /* Margen vertical y centrado horizontal */
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1); /* Sombra un poco más pronunciada */
+    background-color: #fff; /* Fondo blanco para la tabla */
+}
+
+/* Estilos para celdas de encabezado (th) y datos (td) */
+th, td {
+    border: 1px solid #dee2e6; /* Borde gris más claro */
+    padding: 12px 15px; /* Más padding */
+    text-align: left; /* Alineación estándar */
+    vertical-align: middle; /* Alinear contenido verticalmente al centro */
+}
+
+/* Estilos específicos para encabezados de tabla */
+th {
+    background-color: #e9ecef; /* Fondo gris claro para encabezados */
+    font-weight: bold;
+    color: #495057; /* Color de texto gris oscuro */
+}
+
+/* Estilos para filas alternas (opcional, mejora legibilidad) */
+/* tbody tr:nth-child(even) {
+    background-color: #f8f9fa;
+} */
+
+/* Contenedor para la sección de comparación visual */
+.comparison-container {
+    margin-top: 40px;
+    padding-top: 20px;
+    border-top: 1px solid #eee; /* Línea separadora */
+}
+
+/* Tabla específica para la comparación (puede heredar estilos de 'table') */
+.comparison-table td,
+.comparison-table th {
+    font-size: 0.9em; /* Texto ligeramente más pequeño */
+    padding: 8px 10px; /* Padding más ajustado */
+}
+
+/* Estilos para la barra de comparación visual */
+.bar {
+    background-color: #0d6efd; /* Un azul ligeramente diferente */
+    height: 20px; /* Un poco más alta */
+    display: inline-block; /* Para que esté en línea con el valor */
+    vertical-align: middle; /* Alinear con el texto del valor */
+    min-width: 1px; /* Asegurar visibilidad mínima */
+    border-radius: 3px;
+    box-shadow: inset 0 -2px 2px rgba(0,0,0,0.1); /* Sombra interna sutil */
+}
+
+/* Estilos para el valor numérico junto a la barra */
+.value {
+    display: inline-block;
+    width: 35px; /* Ajustar si necesitas más espacio para '100' */
+    text-align: right;
+    margin-right: 6px; /* Espacio entre número y barra */
+    vertical-align: middle;
+    font-weight: bold;
+    font-size: 0.85em; /* Valor numérico un poco más pequeño */
+    color: #6c757d; /* Color gris para el número */
+}
+
+/* Estilos generales para títulos (ya estaban en parte, refinados) */
+h1, h2, h3 {
+    margin-top: 35px; /* Más margen superior */
+    margin-bottom: 15px; /* Margen inferior */
+    border-bottom: 1px solid #dee2e6; /* Borde inferior más claro */
+    padding-bottom: 10px;
+    color: #343a40; /* Títulos más oscuros */
+}
+h1 { font-size: 2em; margin-top: 0; } /* Tamaño más grande para H1, sin margen superior */
+h2 { font-size: 1.6em; }
+h3 { font-size: 1.3em; }
+
+/* Añadir un estilo para enlaces */
+a {
+    color: #007bff;
+    text-decoration: none; /* Quitar subrayado por defecto */
+}
+a:hover {
+    text-decoration: underline; /* Subrayar al pasar el ratón */
+    color: #0056b3;
+}
