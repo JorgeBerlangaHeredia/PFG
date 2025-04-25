@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="es">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <title>Optimización de Alineaciones NBA - Carga</title>
+    {# Enlazar el archivo CSS externo #}
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    {# Contenedor principal para centrar y dar fondo blanco #}
+    <div class="container">
+
+        <h1>Optimización de Alineaciones NBA</h1>
+
+        {# Bloque para mostrar mensajes flash #}
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          {% if messages %}
+            {% for category, message in messages %}
+              <div class="alert alert-{{ category }}">{{ message }}</div>
+            {% endfor %}
+          {% endif %}
+        {% endwith %}
+
+        <p>Sube el archivo CSV con las estadísticas de los jugadores y selecciona los parámetros para generar la alineación óptima.</p>
+
+        {# --- INICIO DEL FORMULARIO --- #}
+        <form method="post" action="{{ url_for('procesar_datos') }}" enctype="multipart/form-data">
+
+            {# Grupo para el archivo CSV (Label + Input directos) #}
+            <div class="form-group">
+                <label for="archivo_jugadores">Archivo CSV de Jugadores:</label>
+                <input type="file" name="archivo_jugadores" id="archivo_jugadores" accept=".csv" required>
+            </div>
+
+            {# Grupo para Mínimo G (Label + Input directos) #}
+            <div class="form-group">
+                <label for="min_g">Mínimo Partidos Jugados (G):</label>
+                <input type="number" name="min_g" id="min_g" value="20" min="0" required>
+            </div>
+
+            {# Grupo para Mínimo MP Total (Label + Input directos) #}
+            <div class="form-group">
+                <label for="min_mp_total">Mínimo Minutos Totales (MP_Total):</label>
+                <input type="number" name="min_mp_total" id="min_mp_total" value="500" min="0" required>
+            </div>
+
+            {# Grupo para Selección de Métrica (Label + Select directos) #}
+            <div class="form-group">
+                <label for="metrica_choice">Enfoque de Optimización:</label>
+                <select name="metrica_choice" id="metrica_choice">
+                    <option value="1">Ofensivo (Puntos Totales)</option>
+                    <option value="2">Defensivo (Volumen STL+BLK)</option>
+                    <option value="3" selected>Equilibrado (EFF/MIN)</option>
+                </select>
+            </div>
+
+            {# Contenedor para centrar el botón #}
+            <div class="button-container">
+                <input type="submit" value="Generar Alineación">
+            </div>
+
+        </form>
+        {# --- FIN DEL FORMULARIO --- #}
+
+    </div> {# --- Fin del contenedor principal --- #}
+</body>
+</html>
