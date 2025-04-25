@@ -1,140 +1,147 @@
-/* --- Paso 2: Estilos del Formulario --- */
+/* static/style.css - Versión Final Limpia (con label ancha y sin duplicados) */
 
-.form-group {
-    margin-bottom: 20px; /* Espacio vertical entre cada grupo label/input */
+/* Reset Básico */
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+/* Variables de Color */
+:root {
+    --color-primary: #1E2A38;   /* Azul oscuro */
+    --color-secondary: #FF6B00; /* Naranja brillante */
+    --color-background: #F7F9FC;/* Gris muy claro */
+    --color-accent: #00BCD4;    /* Cian para acentos/botones */
+    --color-accent-hover: #0097A7;/* Cian más oscuro */
+    --color-text-primary: #212529; /* Texto principal oscuro */
+    --color-text-muted: #6c757d; /* Texto grisáceo */
+    --color-border: #dee2e6;   /* Borde claro */
+    --color-header-bg: #e9ecef; /* Fondo cabecera tabla */
+    --color-white: #ffffff;
+    --color-success-bg: #d1e7dd;
+    --color-success-text: #0f5132;
+    --color-success-border: #badbcc;
+    --color-error-bg: #f8d7da;
+    --color-error-text: #842029;
+    --color-error-border: #f5c2c7;
 }
 
-label {
-    display: block; /* Hace que la etiqueta ocupe su propia línea */
-    margin-bottom: 5px; /* Pequeño espacio entre etiqueta y campo */
-    font-weight: bold; /* Poner etiquetas en negrita */
-    color: #495057; /* Un gris oscuro para las etiquetas */
+/* Estilos Generales del Body */
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    background-color: var(--color-background);
+    color: var(--color-text-primary);
+    line-height: 1.6;
+    padding: 0; /* Sin padding para que flexbox centre bien */
+    display: flex;
+    flex-direction: column;
+    justify-content: center; /* Intenta centrar verticalmente si hay espacio */
+    align-items: center;
+    min-height: 100vh; /* Ocupar al menos alto de ventana */
 }
 
-/* Estilos comunes para campos de texto, número, archivo y selector */
-input[type="file"],
-input[type="number"],
-select {
-    display: block; /* Asegurar que ocupen el ancho disponible */
-    width: 100%; /* Ocupar todo el ancho del contenedor */
-    max-width: 400px; /* Limitar el ancho máximo para que no sea gigante */
-    padding: 10px;
-    border: 1px solid #ced4da; /* Borde gris estándar */
-    border-radius: 4px; /* Bordes redondeados */
-    box-sizing: border-box; /* Padding y borde incluidos en el width */
-    font-size: 0.95em;
-    background-color: #fff; /* Fondo blanco */
+/* Contenedor Principal */
+.container {
+    max-width: 960px;
+    margin: 30px 0; /* Margen vertical, centrado horizontal por body flex */
+    padding: 30px 40px;
+    background-color: var(--color-white);
+    border-radius: 8px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.07);
+    width: 90%; /* Ancho relativo */
 }
 
-/* Estilo específico para el input de archivo (a veces necesita ajustes) */
-input[type="file"] {
-    padding: 8px; /* Un poco menos de padding vertical */
-}
-
-/* Estilos para el botón de envío */
-input[type="submit"] {
-    display: inline-block; /* Permitir que no ocupe todo el ancho */
-    padding: 12px 25px; /* Padding generoso */
-    background-color: #007bff; /* Azul primario */
-    color: white;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    font-size: 1.05em;
-    font-weight: bold;
-    transition: background-color 0.2s ease;
-}
-
-input[type="submit"]:hover {
-    background-color: #0056b3; /* Azul más oscuro al pasar el ratón */
-}
-
-/* --- Paso 3: Estilos para Página de Resultados --- */
-
-/* Estilos generales para tablas en la página de resultados */
-table {
-    border-collapse: collapse; /* Une los bordes de las celdas */
-    width: 95%; /* Que no ocupe el 100% exacto */
-    margin: 25px auto; /* Margen vertical y centrado horizontal */
-    box-shadow: 0 2px 8px rgba(0,0,0,0.1); /* Sombra un poco más pronunciada */
-    background-color: #fff; /* Fondo blanco para la tabla */
-}
-
-/* Estilos para celdas de encabezado (th) y datos (td) */
-th, td {
-    border: 1px solid #dee2e6; /* Borde gris más claro */
-    padding: 12px 15px; /* Más padding */
-    text-align: left; /* Alineación estándar */
-    vertical-align: middle; /* Alinear contenido verticalmente al centro */
-}
-
-/* Estilos específicos para encabezados de tabla */
-th {
-    background-color: #e9ecef; /* Fondo gris claro para encabezados */
-    font-weight: bold;
-    color: #495057; /* Color de texto gris oscuro */
-}
-
-/* Estilos para filas alternas (opcional, mejora legibilidad) */
-/* tbody tr:nth-child(even) {
-    background-color: #f8f9fa;
-} */
-
-/* Contenedor para la sección de comparación visual */
-.comparison-container {
-    margin-top: 40px;
-    padding-top: 20px;
-    border-top: 1px solid #eee; /* Línea separadora */
-}
-
-/* Tabla específica para la comparación (puede heredar estilos de 'table') */
-.comparison-table td,
-.comparison-table th {
-    font-size: 0.9em; /* Texto ligeramente más pequeño */
-    padding: 8px 10px; /* Padding más ajustado */
-}
-
-/* Estilos para la barra de comparación visual */
-.bar {
-    background-color: #0d6efd; /* Un azul ligeramente diferente */
-    height: 20px; /* Un poco más alta */
-    display: inline-block; /* Para que esté en línea con el valor */
-    vertical-align: middle; /* Alinear con el texto del valor */
-    min-width: 1px; /* Asegurar visibilidad mínima */
-    border-radius: 3px;
-    box-shadow: inset 0 -2px 2px rgba(0,0,0,0.1); /* Sombra interna sutil */
-}
-
-/* Estilos para el valor numérico junto a la barra */
-.value {
-    display: inline-block;
-    width: 35px; /* Ajustar si necesitas más espacio para '100' */
-    text-align: right;
-    margin-right: 6px; /* Espacio entre número y barra */
-    vertical-align: middle;
-    font-weight: bold;
-    font-size: 0.85em; /* Valor numérico un poco más pequeño */
-    color: #6c757d; /* Color gris para el número */
-}
-
-/* Estilos generales para títulos (ya estaban en parte, refinados) */
+/* Bloque 2: Tipografía y Mensajes Flash */
 h1, h2, h3 {
-    margin-top: 35px; /* Más margen superior */
-    margin-bottom: 15px; /* Margen inferior */
-    border-bottom: 1px solid #dee2e6; /* Borde inferior más claro */
-    padding-bottom: 10px;
-    color: #343a40; /* Títulos más oscuros */
+    color: var(--color-primary); margin-top: 1.8em; margin-bottom: 0.8em;
+    padding-bottom: 0.4em; border-bottom: 1px solid var(--color-border);
+    font-weight: 600;
 }
-h1 { font-size: 2em; margin-top: 0; } /* Tamaño más grande para H1, sin margen superior */
-h2 { font-size: 1.6em; }
-h3 { font-size: 1.3em; }
+h1:first-child, h2:first-child, h3:first-child { margin-top: 0; }
+h1 { font-size: 2.2em; letter-spacing: -0.5px; }
+h2 { font-size: 1.7em; }
+h3 { font-size: 1.4em; }
+p { margin-bottom: 1em; color: var(--color-text-primary); }
+a { color: var(--color-accent); text-decoration: none; transition: color 0.2s ease; }
+a:hover { color: var(--color-accent-hover); text-decoration: underline; }
+.alert {
+    padding: 15px; margin-top: 20px; margin-bottom: 20px;
+    border: 1px solid transparent; border-radius: 5px; font-weight: 500;
+}
+.alert-error { color: var(--color-error-text); background-color: var(--color-error-bg); border-color: var(--color-error-border); }
+.alert-success { color: var(--color-success-text); background-color: var(--color-success-bg); border-color: var(--color-success-border); }
 
-/* Añadir un estilo para enlaces */
-a {
-    color: #007bff;
-    text-decoration: none; /* Quitar subrayado por defecto */
+/* Bloque 3: Estilos del Formulario (Opción 2: Flexbox con label ancha) */
+.form-group {
+    display: flex; align-items: center; margin-bottom: 20px; flex-wrap: wrap;
 }
-a:hover {
-    text-decoration: underline; /* Subrayar al pasar el ratón */
-    color: #0056b3;
+label {
+    margin-bottom: 0; font-weight: 600; color: var(--color-primary);
+    flex: 0 0 280px; /* Ancho base aumentado */
+    margin-right: 15px;
+    /* text-align: right; */
 }
+input[type="file"], input[type="number"], select {
+    flex-grow: 1; max-width: 400px; padding: 10px; border: 1px solid var(--color-border);
+    border-radius: 5px; box-sizing: border-box; font-size: 0.95em;
+    background-color: var(--color-white); color: var(--color-text-primary);
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+input[type="file"] { padding: 8px; max-width: calc(400px - 10px); }
+input[type="file"]:focus, input[type="number"]:focus, select:focus {
+    outline: none; border-color: var(--color-accent);
+    box-shadow: 0 0 0 0.2rem rgba(0, 188, 212, 0.25);
+}
+.button-container { text-align: center; margin-top: 30px; width: 100%; } /* width:100% ayuda a centrar */
+input[type="submit"] {
+    display: inline-block; padding: 12px 30px; background-color: var(--color-accent);
+    color: var(--color-white); border: none; border-radius: 5px; cursor: pointer;
+    font-size: 1.1em; font-weight: bold; text-transform: uppercase;
+    letter-spacing: 0.5px; transition: background-color 0.2s ease, transform 0.1s ease;
+}
+input[type="submit"]:hover { background-color: var(--color-accent-hover); }
+input[type="submit"]:active { transform: translateY(1px); }
+
+/* Media Query para pantallas pequeñas */
+@media (max-width: 700px) {
+    .form-group { flex-direction: column; align-items: stretch; }
+    label { flex-basis: auto; margin-right: 0; margin-bottom: 8px; text-align: left; }
+    input[type="file"], input[type="number"], select { max-width: none; }
+    .button-container { margin-top: 20px; }
+}
+
+/* Bloque 4: Estilos para Tablas y Comparación Visual */
+table {
+    border-collapse: collapse; width: 100%; margin: 30px 0;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.06); background-color: var(--color-white);
+    border-radius: 5px; overflow: hidden;
+}
+th, td {
+    border: 1px solid var(--color-border); padding: 12px 15px;
+    text-align: left; vertical-align: middle;
+}
+th {
+    background-color: var(--color-header-bg); font-weight: 600;
+    color: var(--color-primary); white-space: nowrap;
+}
+.comparison-container { margin-top: 40px; padding-top: 20px; border-top: 1px solid var(--color-border); }
+.comparison-table { box-shadow: none; border-radius: 0; margin-top: 15px; }
+.comparison-table th { background-color: transparent; border-bottom: 2px solid var(--color-border); }
+.comparison-table td, .comparison-table th { font-size: 0.95em; padding: 10px 12px; }
+.bar {
+    background-color: var(--color-secondary); height: 20px; display: inline-block;
+    vertical-align: middle; min-width: 2px; border-radius: 3px;
+    box-shadow: inset 0 -2px 2px rgba(0,0,0,0.1);
+}
+.value {
+    display: inline-block; width: 35px; text-align: right; margin-right: 8px;
+    vertical-align: middle; font-weight: 600; font-size: 0.9em;
+    color: var(--color-text-muted);
+}
+.table-responsive-wrapper {
+    overflow-x: auto; width: 100%; margin-bottom: 1rem;
+    -webkit-overflow-scrolling: touch; border: 1px solid var(--color-border);
+    border-radius: 5px; background-color: var(--color-white);
+}
+.table-responsive-wrapper > .table { margin-bottom: 0; border: none; border-radius: 0; box-shadow: none; }
+.table-responsive-wrapper::-webkit-scrollbar { height: 8px; }
+.table-responsive-wrapper::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 10px;}
+.table-responsive-wrapper::-webkit-scrollbar-thumb { background: #ccc; border-radius: 10px;}
+.table-responsive-wrapper::-webkit-scrollbar-thumb:hover { background: #aaa; }

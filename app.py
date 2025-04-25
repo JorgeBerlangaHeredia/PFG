@@ -6,6 +6,7 @@ from flask import Flask, render_template, request, redirect, url_for, flash
 from werkzeug.utils import secure_filename
 import pandas as pd
 import numpy as np
+from collections import defaultdict
 
 # --- Configuración de Paths ---
 script_dir = os.path.dirname(os.path.abspath(__file__))
@@ -30,7 +31,7 @@ except Exception as e: sys.exit(f"Error CRÍTICO: Otro error importación clases
 app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = upload_folder
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024
-app.secret_key = 'tu_clave_secreta_ultra_segura_aqui_cambiame_v5' # ¡Cambia esto!
+app.secret_key = 'tu_clave_secreta_super_segura_aqui_v7' # ¡Cambia esto!
 
 # --- Configuración Subida Archivos ---
 ALLOWED_EXTENSIONS = {'csv'}
@@ -43,7 +44,13 @@ METRICAS_REFERENCIA = {
     'eficiencia_total': 'EFF', 'rating_ofensivo': 'Off_Rating_Simple'
 }
 OPCIONES_USUARIO_MAP = { '1': 'ofensiva', '2': 'defensiva', '3': 'equilibrada'}
-METRICAS_COMPARACION_VISUAL = ['PTS_Total', 'AST_Total', 'TRB_Total', 'STL_Total', 'BLK_Total', 'DEF_VOLUME_Total', 'EFF']
+METRICAS_COMPARACION = ['PTS_Total', 'AST_Total', 'TRB_Total', 'STL_Total', 'BLK_Total', 'DEF_VOLUME_Total', 'EFF', 'EFF/MIN', 'Off_Rating_Simple', 'Net_Rating_Simple'] # Para cálculo numérico
+METRICAS_COMPARACION_VISUAL = ['PTS_Total', 'AST_Total', 'TRB_Total', 'STL_Total', 'BLK_Total', 'DEF_VOLUME_Total', 'EFF'] # Para gráfico FIFA
+METRICAS_SENSIBILIDAD = {
+    'Ofensivo (Puntos)': 'PTS_Total', 'Defensivo (Volumen)': 'DEF_VOLUME_Total',
+    'Equilibrado (EFF/MIN)': 'EFF/MIN', 'Eficiencia Total (EFF)': 'EFF',
+    'Rating Ofensivo Simple': 'Off_Rating_Simple'
+}
 
 # --- Rutas de la Aplicación ---
 
@@ -71,7 +78,6 @@ def procesar_datos():
             file.save(filepath)
             print(f"INFO: Archivo '{filename}' guardado en '{filepath}'")
 
-            # Leer y validar parámetros
             try:
                 min_g = int(request.form.get('min_g', 20))
                 min_mp_total = int(request.form.get('min_mp_total', 500))
@@ -81,121 +87,132 @@ def procesar_datos():
                 flash(f'Error: Valores inválidos para filtros: {e}', 'error')
                 return redirect(url_for('pagina_carga'))
 
-            # Determinar métrica principal
             clave_enfoque = OPCIONES_USUARIO_MAP.get(metrica_choice_num, 'equilibrada')
-            metrica_principal = METRICAS_REFERENCIA.get(clave_enfoque)
-            if not metrica_principal:
-                metrica_principal = 'EFF/MIN'; clave_enfoque = 'equilibrada'
+            metrica_principal = METRICAS_REFERENCIA.get(clave_enfoque, 'EFF/MIN')
             enfoque_desc = clave_enfoque.capitalize()
             print(f"INFO: Parámetros - G>={min_g}, MP_Total>={min_mp_total}, Enfoque: {enfoque_desc} ({metrica_principal})")
 
             # ******** INICIO EJECUCIÓN LÓGICA BACKEND ********
             datos_con_metricas_idx = None; quinteto_opt_df = None; valor_optimo = None
             suplentes_dict = None; suplentes_df = None; comparacion_visual_data = None
-            error_procesamiento = None; optimizador = None; analizador = None
+            jugadores_robustos = {}; error_procesamiento = None; optimizador = None; analizador = None
+            df_comparacion_num = None; jaccard_promedio = None; mejora_promedio_mp = None
+            equipos_superados = None; total_comparados_validos_mp = None
 
             try:
-                # PASO A: Carga y Limpieza
-                print("Backend Paso A: Cargando datos...")
-                cargador = CargaDatos(); cargador.cargar_datos(filepath)
-                if cargador.datos is None: raise ValueError("Error cargando CSV subido.")
+                # PASOS A, B, C (Carga, Métricas, Optimización)
+                print("Backend: Cargando y Calculando...")
+                cargador=CargaDatos(); cargador.cargar_datos(filepath)
+                if cargador.datos is None: raise ValueError("Error carga CSV.")
                 cargador.preprocesar_datos(); datos_limpios = cargador.obtener_datos_limpiados()
-                if datos_limpios is None or datos_limpios.empty: raise ValueError("Preprocesamiento falló.")
-                print("Backend Paso A: Datos cargados y limpiados.")
-
-                # PASO B: Cálculo de Métricas
-                print("Backend Paso B: Calculando métricas...")
-                calculador = IndicadoresDesempeño(datos_limpios); datos_con_metricas_df = calculador.calcular_metricas()
-                if datos_con_metricas_df is None: raise ValueError("Error calculando métricas.")
+                if datos_limpios is None or datos_limpios.empty: raise ValueError("Error preproc.")
+                calculador=IndicadoresDesempeño(datos_limpios); datos_con_metricas_df = calculador.calcular_metricas()
+                if datos_con_metricas_df is None: raise ValueError("Error cálculo métricas.")
                 if 'Player' in datos_con_metricas_df.columns: datos_con_metricas_idx = datos_con_metricas_df.set_index('Player')
                 elif datos_con_metricas_df.index.name == 'Player': datos_con_metricas_idx = datos_con_metricas_df
-                else: temp_df=datos_con_metricas_df.reset_index(); datos_con_metricas_idx=temp_df.set_index('Player') if 'Player' in temp_df.columns else sys.exit("Error índice Player")
-                print("Backend Paso B: Métricas calculadas.")
+                else: temp_df=datos_con_metricas_df.reset_index(); datos_con_metricas_idx=temp_df.set_index('Player') if 'Player' in temp_df.columns else sys.exit("Error índice.")
                 if metrica_principal not in datos_con_metricas_idx.columns: raise ValueError(f"Métrica '{metrica_principal}' no encontrada.")
-
-                # PASO C: Optimización
-                print(f"Backend Paso C: Optimizando para '{metrica_principal}'...")
+                print(f"Backend: Optimizando para '{metrica_principal}'...")
                 optimizador = OptimizadorAlineacion(datos_con_metricas_idx, min_g=min_g, min_mp_total=min_mp_total)
                 quinteto_opt_df, valor_optimo, suplentes_dict = optimizador.optimizar_quinteto(metrica_objetivo=metrica_principal)
-                print("Backend Paso C: Optimización terminada.")
 
-                # Preparar DF de suplentes (si existen) - CORREGIDO
+                # Preparar DF suplentes
                 if suplentes_dict:
-                     nombres_suplentes = [j for j in suplentes_dict.values() if j and j != 'N/A']
-                     if nombres_suplentes:
-                         # Lista inicial de KPIs deseados (PUEDE TENER DUPLICADOS)
-                         kpis_mostrar_sup_inicial = [metrica_principal, 'Pos', 'G', 'MP_Total', 'PTS_Total', 'AST_Total', 'TRB_Total', 'DEF_VOLUME_Total', 'EFF']
-                         # --- CORRECCIÓN: Asegurar columnas únicas ---
-                         kpis_unicos = list(dict.fromkeys(kpis_mostrar_sup_inicial)) # Elimina duplicados manteniendo orden (aprox)
-                         # --- Filtrar por columnas que existen en el DataFrame ---
-                         cols_mostrar_sup = [col for col in kpis_unicos if col in datos_con_metricas_idx.columns]
-                         # --- Fin Corrección ---
+                    nombres_suplentes = [j for j in suplentes_dict.values() if j and j != 'N/A']
+                    if nombres_suplentes:
+                        kpis_mostrar_sup_inicial = [metrica_principal,'Pos','G','MP_Total','PTS_Total','AST_Total','TRB_Total','DEF_VOLUME_Total','EFF']
+                        kpis_unicos = list(dict.fromkeys(kpis_mostrar_sup_inicial))
+                        cols_mostrar_sup = [c for c in kpis_unicos if c in datos_con_metricas_idx.columns]
+                        if cols_mostrar_sup:
+                            try:
+                                temp_sdf = datos_con_metricas_idx.loc[nombres_suplentes, cols_mostrar_sup]
+                                suplentes_df = temp_sdf.reset_index() if temp_sdf.index.name == 'Player' else temp_sdf
+                                if metrica_principal in suplentes_df.columns: suplentes_df = suplentes_df.sort_values(by=metrica_principal, ascending=False)
+                                elif 'EFF' in suplentes_df.columns: suplentes_df = suplentes_df.sort_values(by='EFF', ascending=False)
+                            except KeyError as ke: print(f"Adv: Suplentes no hallados: {ke}"); suplentes_df = None
 
-                         if cols_mostrar_sup:
-                             try:
-                                 # Seleccionar usando la lista de columnas únicas y existentes
-                                 suplentes_df_temp = datos_con_metricas_idx.loc[nombres_suplentes, cols_mostrar_sup]
-                                 # Asegurar Player como columna y ordenar
-                                 if suplentes_df_temp.index.name == 'Player': suplentes_df = suplentes_df_temp.reset_index()
-                                 else: suplentes_df = suplentes_df_temp # Asumir que ya está si no es índice
-                                 # Ordenar por la métrica principal (si existe en las columnas seleccionadas)
-                                 if metrica_principal in suplentes_df.columns:
-                                      suplentes_df = suplentes_df.sort_values(by=metrica_principal, ascending=False)
-                                 elif 'EFF' in suplentes_df.columns: # Fallback a EFF si la métrica principal no está
-                                      suplentes_df = suplentes_df.sort_values(by='EFF', ascending=False)
-                             except KeyError as ke: print(f"Advertencia: Suplentes no encontrados para métricas: {ke}"); suplentes_df = None
-                         else:
-                              print("Advertencia: Ninguna columna válida encontrada para mostrar métricas de suplentes.")
-                              suplentes_df = None
-
-
-                # PASO D y E: Cargar Reales y Preparar Comparación Visual
-                # ... (Sin cambios en esta sección) ...
-                print("Backend: Cargando datos reales y preparando visualización...")
+                # PASO D: Cargar Reales
+                print("Backend: Cargando datos reales...")
                 df_reales = None
                 try:
                     df_reales = pd.read_csv(archivo_reales_path)
                     expected_cols = ['Tm', 'Player1', 'Player2', 'Player3', 'Player4', 'Player5']
                     if not all(col in df_reales.columns for col in expected_cols) or df_reales.empty: df_reales = None
-                except FileNotFoundError: print(f"Advertencia: Archivo reales no encontrado"); df_reales = None
-                except Exception as e: print(f"Error cargando reales: {e}"); df_reales = None
+                except Exception as e: print(f"Error/Adv carga reales: {e}"); df_reales = None
 
-                if quinteto_opt_df is not None and df_reales is not None and optimizador is not None:
+                # PASO E, F, G: Instanciar Analizador, Comparaciones y Sensibilidad
+                if quinteto_opt_df is not None and optimizador is not None:
                     quinteto_temp_analisis = quinteto_opt_df.copy()
-                    if 'Player' not in quinteto_temp_analisis.columns and quinteto_temp_analisis.index.name == 'Player':
-                         quinteto_temp_analisis = quinteto_temp_analisis.reset_index()
-                    elif 'Player' not in quinteto_temp_analisis.columns: raise ValueError("Falta columna 'Player' en quinteto óptimo.")
+                    if 'Player' not in quinteto_temp_analisis.columns:
+                        if quinteto_temp_analisis.index.name == 'Player': quinteto_temp_analisis = quinteto_temp_analisis.reset_index()
+                        else: raise ValueError("Falta 'Player' en quinteto óptimo.")
 
                     analizador = AnalisisResultados(
                          datos_con_metricas=datos_con_metricas_idx, metrica_principal=metrica_principal,
                          quinteto_optimo_df=quinteto_temp_analisis, valor_optimo_titulares=valor_optimo,
                          df_reales=df_reales, optimizador=optimizador
                      )
-                    comparacion_visual_data = preparar_datos_comparacion_visual(analizador, METRICAS_COMPARACION_VISUAL)
-                    print("Backend: Datos de comparación listos.")
-                else:
-                    print("Backend: Omitiendo preparación visual (falta óptimo, reales u optimizador).")
+
+                    # G: Comparación Numérica y Resumen
+                    if df_reales is not None:
+                        print("Backend: Ejecutando comparación numérica...")
+                        metricas_comp_real_existentes = [m for m in METRICAS_COMPARACION if m in datos_con_metricas_idx.columns and pd.api.types.is_numeric_dtype(datos_con_metricas_idx[m])]
+                        if metricas_comp_real_existentes:
+                             try:
+                                 df_comparacion_num = analizador.ejecutar_comparacion_optimo_vs_reales(metricas_comp_real_existentes)
+                                 if df_comparacion_num is not None and not df_comparacion_num.empty:
+                                     if 'Jaccard' in df_comparacion_num.columns: jaccard_promedio = df_comparacion_num['Jaccard'].mean()
+                                     mejora_col = f"{metrica_principal}_Mejora"
+                                     if mejora_col in df_comparacion_num.columns:
+                                         data = df_comparacion_num[mejora_col].dropna()
+                                         if not data.empty:
+                                             mejora_promedio_mp = data.mean(); equipos_superados = (data > 1e-9).sum(); total_comparados_validos_mp = len(data)
+                                     print("Backend: Resumen numérico calculado.")
+                             except Exception as e_comp: print(f"Error en comp. numérica: {e_comp}")
+
+                    # E: Preparar Comparación Visual
+                    if df_reales is not None:
+                        print("Backend: Preparando comparación visual...")
+                        comparacion_visual_data = preparar_datos_comparacion_visual(analizador, METRICAS_COMPARACION_VISUAL)
+                        print("Backend: Datos visuales listos.")
+
+                    # F: Ejecutar Análisis de Sensibilidad
+                    print("Backend: Ejecutando análisis de sensibilidad...")
+                    metricas_sens_existentes = {n: m for n, m in METRICAS_SENSIBILIDAD.items() if m in datos_con_metricas_idx.columns and pd.api.types.is_numeric_dtype(datos_con_metricas_idx[m])}
+                    if metricas_sens_existentes:
+                        try:
+                            resultados_sens = analizador.ejecutar_analisis_sensibilidad(metricas_sens_existentes)
+                            if resultados_sens:
+                                apariciones = defaultdict(int)
+                                for quinteto in resultados_sens.values():
+                                    if quinteto and isinstance(quinteto, list) and len(quinteto) == 5:
+                                        for j in [str(p) for p in quinteto]: apariciones[j] += 1
+                                temp_robustos = {j: c for j, c in apariciones.items() if c > 1}
+                                jugadores_robustos = dict(sorted(temp_robustos.items(), key=lambda item: (-item[1], item[0])))
+                                print(f"Backend: Jugadores robustos encontrados: {len(jugadores_robustos)}")
+                        except Exception as e_sens: print(f"Error en sensibilidad: {e_sens}")
+                    else: print("Backend: Sin métricas para sensibilidad.")
+                else: print("Backend: Omitiendo Análisis (falta óptimo u optimizador).")
 
             except Exception as e_backend:
                 print(f"Error durante el procesamiento backend: {e_backend}")
                 error_procesamiento = str(e_backend)
-
             # ******** FIN EJECUCIÓN LÓGICA BACKEND ********
 
-            # --- DEBUG ANTES DE RENDERIZAR (Opcional) ---
-            # print("\nDEBUG APP: Datos pasados a results.html:")
-            # ... (código de debug si se necesita) ...
-
-            # Renderizar la plantilla de resultados
+            # Renderizar plantilla
             print("INFO: Renderizando página de resultados...")
             return render_template('results.html',
-                                   metrica_principal=metrica_principal,
-                                   enfoque_desc=enfoque_desc,
-                                   quinteto_opt_df=quinteto_opt_df,
-                                   valor_optimo=valor_optimo,
-                                   suplentes_dict=suplentes_dict,
-                                   suplentes_df=suplentes_df, # Ahora puede tener datos
+                                   metrica_principal=metrica_principal, enfoque_desc=enfoque_desc,
+                                   quinteto_opt_df=quinteto_opt_df, valor_optimo=valor_optimo,
+                                   suplentes_dict=suplentes_dict, suplentes_df=suplentes_df,
                                    comparacion_visual_data=comparacion_visual_data,
+                                   # Nuevas variables para resumen numérico
+                                   jaccard_promedio=jaccard_promedio,
+                                   mejora_promedio_mp=mejora_promedio_mp,
+                                   equipos_superados=equipos_superados,
+                                   total_comparados_validos_mp=total_comparados_validos_mp,
+                                   # Variable para robustos
+                                   jugadores_robustos=jugadores_robustos,
                                    error=error_procesamiento)
 
         except Exception as e_outer:
@@ -208,9 +225,8 @@ def procesar_datos():
 
 
 # --- Función Auxiliar para preparar datos de Comparación Visual ---
-# (Sin cambios respecto a la versión anterior)
+# (Sin cambios)
 def preparar_datos_comparacion_visual(analizador, metricas_visual):
-    # ... (código interno de esta función) ...
     if analizador.df_reales is None or analizador.df_reales.empty or not analizador.metricas_titulares_optimo: return None
     metricas_validas = [m for m in metricas_visual if m in analizador.datos_metricas.columns and pd.api.types.is_numeric_dtype(analizador.datos_metricas[m])]
     if not metricas_validas: return None
