@@ -76,9 +76,6 @@
                      <li><strong>Mejora Promedio en {{ metrica_principal }}:</strong> {{ '%.2f'|format(mejora_promedio_mp) }}
                          <br><small>(Diferencia promedio Óptimo - Real para la métrica principal. Positivo = óptimo superior).</small>
                      </li>
-                     <li><strong>Supera a Equipos Reales (en {{ metrica_principal }}):</strong> {{ equipos_superados | default(0) }} de {{ total_comparados_validos_mp | default('N/A') }}
-                         <br><small>(Número de equipos reales cuyo valor en la métrica principal fue superado por el óptimo).</small>
-                     </li>
                      {% endif %}
                  </ul>
             {% endif %}
