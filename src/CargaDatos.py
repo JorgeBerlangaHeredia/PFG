@@ -1,4 +1,3 @@
-# --- START OF FILE CargaDatos.py ---
 
 import pandas as pd
 import os

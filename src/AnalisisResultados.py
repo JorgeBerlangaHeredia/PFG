@@ -1,4 +1,4 @@
-# --- INICIO DEL ARCHIVO AnalisisResultados.py ---
+
 
 import pandas as pd
 from collections import defaultdict
@@ -288,5 +288,3 @@ class AnalisisResultados:
     def generar_visualizaciones(self, df_comp_real_resumen=None, resultados_sensibilidad=None):
         """Placeholder para gráficos futuros (e.g., con Matplotlib)."""
         pass  # No hacer nada aquí
-
-# --- FIN DEL ARCHIVO AnalisisResultados.py ---

@@ -1,4 +1,4 @@
-# --- INICIO DEL ARCHIVO main.py (ubicado en src/) ---
+
 
 import sys
 import os
@@ -185,5 +185,3 @@ def main():
 if __name__ == "__main__":
     # Punto de entrada: ejecuta la función main cuando se corre el script
     main()
-
-# --- FIN DEL ARCHIVO main.py (ubicado en src/) ---

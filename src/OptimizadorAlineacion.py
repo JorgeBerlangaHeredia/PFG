@@ -1,4 +1,4 @@
-# --- INICIO DEL ARCHIVO OptimizadorAlineacion.py ---
+
 
 import pandas as pd
 from pulp import LpProblem, LpVariable, lpSum, LpMaximize, LpBinary, PULP_CBC_CMD, LpStatus
@@ -194,5 +194,3 @@ class OptimizadorAlineacion:
             if target_pos in positions:
                 eligible_players.append(player_index)
         return eligible_players
-
-# --- FIN DEL ARCHIVO OptimizadorAlineacion.py ---

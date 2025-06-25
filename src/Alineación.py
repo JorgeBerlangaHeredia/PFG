@@ -1,4 +1,3 @@
-# --- START OF FILE Alineación.py ---
 
 import pandas as pd
 
@@ -192,5 +191,3 @@ class Alineación:
         else:
             print("No se seleccionaron suplentes válidos.")
         print("------------------------------------------")
-
-# --- END OF FILE Alineación.py ---

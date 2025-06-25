@@ -1,5 +1,3 @@
-/* static/style.css - Hoja de estilos principal para la aplicación Flask. */
-
 /* --- Reseteo Básico --- */
 /* Elimina márgenes y paddings que los navegadores ponen por defecto. */
 * { margin: 0; padding: 0; box-sizing: border-box; }

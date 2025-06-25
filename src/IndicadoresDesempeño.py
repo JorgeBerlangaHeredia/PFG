@@ -1,4 +1,4 @@
-# --- INICIO DEL ARCHIVO IndicadoresDesempeño.py ---
+
 
 import pandas as pd
 import numpy as np  # Necesario para np.where y np.inf
@@ -142,4 +142,3 @@ class IndicadoresDesempeño:
             self.calcular_metricas()
         return self.datos_con_metricas.copy() if self.datos_con_metricas is not None else None
 
-# --- FIN DEL ARCHIVO IndicadoresDesempeño.py ---
