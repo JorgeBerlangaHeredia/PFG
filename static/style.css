@@ -1,20 +1,23 @@
-/* static/style.css - Versión Final Limpia (con label ancha y sin duplicados) */
+/* static/style.css - Hoja de estilos principal para la aplicación Flask. */
 
-/* Reset Básico */
+/* --- Reseteo Básico --- */
+/* Elimina márgenes y paddings que los navegadores ponen por defecto. */
 * { margin: 0; padding: 0; box-sizing: border-box; }
 
-/* Variables de Color */
+/* --- Variables de Color --- */
+/* Define una paleta de colores centralizada. Facilita cambiar el tema de la web. */
 :root {
-    --color-primary: #1E2A38;   /* Azul oscuro */
-    --color-secondary: #FF6B00; /* Naranja brillante */
-    --color-background: #F7F9FC;/* Gris muy claro */
-    --color-accent: #00BCD4;    /* Cian para acentos/botones */
-    --color-accent-hover: #0097A7;/* Cian más oscuro */
-    --color-text-primary: #212529; /* Texto principal oscuro */
-    --color-text-muted: #6c757d; /* Texto grisáceo */
-    --color-border: #dee2e6;   /* Borde claro */
-    --color-header-bg: #e9ecef; /* Fondo cabecera tabla */
+    --color-primary: #1E2A38;   /* Azul oscuro para títulos */
+    --color-secondary: #FF6B00; /* Naranja para las barras de comparación */
+    --color-background: #F7F9FC;/* Gris claro para el fondo de la página */
+    --color-accent: #00BCD4;    /* Cian para botones y enlaces */
+    --color-accent-hover: #0097A7;/* Cian más oscuro para cuando el ratón pasa por encima */
+    --color-text-primary: #212529; /* Color principal del texto */
+    --color-text-muted: #6c757d; /* Color para texto secundario (gris) */
+    --color-border: #dee2e6;   /* Color para los bordes */
+    --color-header-bg: #e9ecef; /* Fondo para las cabeceras de las tablas */
     --color-white: #ffffff;
+    /* Colores para las alertas de éxito y error */
     --color-success-bg: #d1e7dd;
     --color-success-text: #0f5132;
     --color-success-border: #badbcc;
@@ -23,125 +26,123 @@
     --color-error-border: #f5c2c7;
 }
 
-/* Estilos Generales del Body */
+/* --- Estilos Generales del Body --- */
+/* Define la fuente, el color de fondo y usa Flexbox para centrar el contenido principal. */
 body {
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
     background-color: var(--color-background);
     color: var(--color-text-primary);
     line-height: 1.6;
-    padding: 0; /* Sin padding para que flexbox centre bien */
-    display: flex;
-    flex-direction: column;
-    justify-content: center; /* Intenta centrar verticalmente si hay espacio */
-    align-items: center;
-    min-height: 100vh; /* Ocupar al menos alto de ventana */
+    display: flex; /* Activa Flexbox */
+    justify-content: center; /* Centra el contenido verticalmente */
+    align-items: center; /* Centra el contenido horizontalmente */
+    min-height: 100vh; /* Asegura que el body ocupe al menos toda la altura de la ventana */
 }
 
-/* Contenedor Principal */
+/* --- Contenedor Principal --- */
+/* Define el bloque blanco central donde va todo el contenido. */
 .container {
-    max-width: 960px;
-    margin: 30px 0; /* Margen vertical, centrado horizontal por body flex */
-    padding: 30px 40px;
+    max-width: 960px; /* Ancho máximo del contenedor */
+    margin: 30px 0;
+    padding: 30px 40px; /* Espaciado interno */
     background-color: var(--color-white);
-    border-radius: 8px;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.07);
-    width: 90%; /* Ancho relativo */
+    border-radius: 8px; /* Bordes redondeados */
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.07); /* Sombra suave */
+    width: 90%;
 }
 
-/* Bloque 2: Tipografía y Mensajes Flash */
+/* --- Tipografía y Mensajes de Alerta --- */
+/* Estilos para los títulos (h1, h2, h3), párrafos (p) y enlaces (a). */
 h1, h2, h3 {
     color: var(--color-primary); margin-top: 1.8em; margin-bottom: 0.8em;
     padding-bottom: 0.4em; border-bottom: 1px solid var(--color-border);
-    font-weight: 600;
 }
 h1:first-child, h2:first-child, h3:first-child { margin-top: 0; }
-h1 { font-size: 2.2em; letter-spacing: -0.5px; }
-h2 { font-size: 1.7em; }
-h3 { font-size: 1.4em; }
-p { margin-bottom: 1em; color: var(--color-text-primary); }
-a { color: var(--color-accent); text-decoration: none; transition: color 0.2s ease; }
+a { color: var(--color-accent); text-decoration: none; }
 a:hover { color: var(--color-accent-hover); text-decoration: underline; }
+
+/* Estilos para los mensajes de error/éxito que muestra Flask. */
 .alert {
-    padding: 15px; margin-top: 20px; margin-bottom: 20px;
-    border: 1px solid transparent; border-radius: 5px; font-weight: 500;
+    padding: 15px; margin-bottom: 20px;
+    border: 1px solid transparent; border-radius: 5px;
 }
 .alert-error { color: var(--color-error-text); background-color: var(--color-error-bg); border-color: var(--color-error-border); }
 .alert-success { color: var(--color-success-text); background-color: var(--color-success-bg); border-color: var(--color-success-border); }
 
-/* Bloque 3: Estilos del Formulario (Opción 2: Flexbox con label ancha) */
+/* --- Estilos del Formulario de Carga --- */
+/* Contenedor para cada grupo de etiqueta + campo (ej. "Nombre:" [input]). */
 .form-group {
-    display: flex; align-items: center; margin-bottom: 20px; flex-wrap: wrap;
+    display: flex; align-items: center; margin-bottom: 20px;
 }
+/* Estilo para las etiquetas de los campos del formulario. */
 label {
-    margin-bottom: 0; font-weight: 600; color: var(--color-primary);
-    flex: 0 0 280px; /* Ancho base aumentado */
+    font-weight: 600; color: var(--color-primary);
+    flex: 0 0 280px; /* Ancho fijo para la etiqueta */
     margin-right: 15px;
-    /* text-align: right; */
 }
+/* Estilos generales para los campos de entrada (número, archivo, desplegable). */
 input[type="file"], input[type="number"], select {
     flex-grow: 1; max-width: 400px; padding: 10px; border: 1px solid var(--color-border);
-    border-radius: 5px; box-sizing: border-box; font-size: 0.95em;
-    background-color: var(--color-white); color: var(--color-text-primary);
-    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    border-radius: 5px; font-size: 0.95em;
 }
-input[type="file"] { padding: 8px; max-width: calc(400px - 10px); }
+/* Resalta el borde del campo cuando el usuario hace clic en él. */
 input[type="file"]:focus, input[type="number"]:focus, select:focus {
     outline: none; border-color: var(--color-accent);
     box-shadow: 0 0 0 0.2rem rgba(0, 188, 212, 0.25);
 }
-.button-container { text-align: center; margin-top: 30px; width: 100%; } /* width:100% ayuda a centrar */
+/* Estilos para el botón de envío principal. */
+.button-container { text-align: center; margin-top: 30px; }
 input[type="submit"] {
-    display: inline-block; padding: 12px 30px; background-color: var(--color-accent);
+    padding: 12px 30px; background-color: var(--color-accent);
     color: var(--color-white); border: none; border-radius: 5px; cursor: pointer;
     font-size: 1.1em; font-weight: bold; text-transform: uppercase;
-    letter-spacing: 0.5px; transition: background-color 0.2s ease, transform 0.1s ease;
 }
 input[type="submit"]:hover { background-color: var(--color-accent-hover); }
-input[type="submit"]:active { transform: translateY(1px); }
 
-/* Media Query para pantallas pequeñas */
+/* --- Diseño Responsivo (para pantallas pequeñas como móviles) --- */
 @media (max-width: 700px) {
+    /* Los campos del formulario se apilan verticalmente en lugar de estar en línea. */
     .form-group { flex-direction: column; align-items: stretch; }
-    label { flex-basis: auto; margin-right: 0; margin-bottom: 8px; text-align: left; }
-    input[type="file"], input[type="number"], select { max-width: none; }
-    .button-container { margin-top: 20px; }
+    label { margin-bottom: 8px; text-align: left; }
 }
 
-/* Bloque 4: Estilos para Tablas y Comparación Visual */
+/* --- Estilos para Tablas y la Comparación Visual de Resultados --- */
+/* Estilos generales para todas las tablas. */
 table {
     border-collapse: collapse; width: 100%; margin: 30px 0;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.06); background-color: var(--color-white);
+    box-shadow: 0 4px 10px rgba(0,0,0,0.06);
     border-radius: 5px; overflow: hidden;
 }
+/* Espaciado y bordes para las celdas y cabeceras. */
 th, td {
     border: 1px solid var(--color-border); padding: 12px 15px;
-    text-align: left; vertical-align: middle;
+    text-align: left;
 }
+/* Fondo y estilo para las cabeceras de la tabla. */
 th {
     background-color: var(--color-header-bg); font-weight: 600;
-    color: var(--color-primary); white-space: nowrap;
 }
-.comparison-container { margin-top: 40px; padding-top: 20px; border-top: 1px solid var(--color-border); }
-.comparison-table { box-shadow: none; border-radius: 0; margin-top: 15px; }
-.comparison-table th { background-color: transparent; border-bottom: 2px solid var(--color-border); }
-.comparison-table td, .comparison-table th { font-size: 0.95em; padding: 10px 12px; }
+/* Estilos específicos para la tabla de comparación 'estilo FIFA'. */
+.comparison-container { margin-top: 40px; }
+.comparison-table { box-shadow: none; }
+/* La barra naranja que representa visualmente el valor de la métrica. */
 .bar {
     background-color: var(--color-secondary); height: 20px; display: inline-block;
-    vertical-align: middle; min-width: 2px; border-radius: 3px;
-    box-shadow: inset 0 -2px 2px rgba(0,0,0,0.1);
+    vertical-align: middle; border-radius: 3px;
 }
+/* El número (0-100) que se muestra junto a la barra. */
 .value {
     display: inline-block; width: 35px; text-align: right; margin-right: 8px;
-    vertical-align: middle; font-weight: 600; font-size: 0.9em;
-    color: var(--color-text-muted);
+    font-weight: 600; color: var(--color-text-muted);
 }
+/* Este truco hace que las tablas muy anchas no rompan el diseño en móviles, */
+/* añadiendo una barra de scroll horizontal solo para la tabla. */
 .table-responsive-wrapper {
-    overflow-x: auto; width: 100%; margin-bottom: 1rem;
-    -webkit-overflow-scrolling: touch; border: 1px solid var(--color-border);
-    border-radius: 5px; background-color: var(--color-white);
+    overflow-x: auto; width: 100%;
+    border: 1px solid var(--color-border); border-radius: 5px;
 }
-.table-responsive-wrapper > .table { margin-bottom: 0; border: none; border-radius: 0; box-shadow: none; }
+.table-responsive-wrapper > .table { margin-bottom: 0; box-shadow: none; }
+
+/* Estilos personalizados para la barra de scroll (opcional). */
 .table-responsive-wrapper::-webkit-scrollbar { height: 8px; }
-.table-responsive-wrapper::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 10px;}
 .table-responsive-wrapper::-webkit-scrollbar-thumb { background: #ccc; border-radius: 10px;}
-.table-responsive-wrapper::-webkit-scrollbar-thumb:hover { background: #aaa; }
