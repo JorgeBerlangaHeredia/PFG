@@ -23,7 +23,7 @@ class OptimizadorAlineacion:
             if 'Player' in self.datos.reset_index().columns:
                 self.datos = self.datos.reset_index().set_index('Player')
             else:
-                raise ValueError("Datos deben tener 'Player' como índice o columna.")
+                raise ValueError("data deben tener 'Player' como índice o columna.")
 
         # Verifica si las columnas para filtros existen, si no, calcula MP_Total
         required_init = ['Pos', 'G', 'MP_Total']
@@ -33,7 +33,7 @@ class OptimizadorAlineacion:
                 self.datos['MP_Total'] = self.datos['MP'] * self.datos['G']
             else:
                 missing_init = [col for col in required_init if col not in self.datos.columns]
-                raise ValueError(f"Datos deben contener columnas para filtros: {missing_init}")
+                raise ValueError(f"data deben contener columnas para filtros: {missing_init}")
 
         self.min_g = min_g
         self.min_mp_total = min_mp_total

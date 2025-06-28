@@ -13,7 +13,7 @@ from collections import defaultdict
 script_dir = os.path.dirname(os.path.abspath(__file__))
 src_path = os.path.join(script_dir, 'src')
 if src_path not in sys.path: sys.path.insert(0, src_path)
-datos_dir = os.path.join(script_dir, 'Datos')
+datos_dir = os.path.join(script_dir, 'data')
 upload_folder = os.path.join(script_dir, 'uploads')  # Carpeta para guardar archivos subidos
 if not os.path.exists(upload_folder): os.makedirs(upload_folder)
 archivo_reales_path = os.path.join(datos_dir, "ruta_reales_csv.csv")

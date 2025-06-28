@@ -4,10 +4,10 @@ import sys
 import os
 import pandas as pd
 
-# --- Ajuste de Rutas para encontrar la carpeta 'Datos/' desde 'src/' ---
+# --- Ajuste de Rutas para encontrar la carpeta 'data/' desde 'src/' ---
 script_dir = os.path.dirname(os.path.abspath(__file__))
 carpeta_padre = os.path.dirname(script_dir)
-datos_dir = os.path.join(carpeta_padre, 'Datos')
+datos_dir = os.path.join(carpeta_padre, 'data')
 ARCHIVO_JUGADORES = os.path.join(datos_dir, "NBA_2024_per_game(03-01-2024).csv")
 ARCHIVO_REALES = os.path.join(datos_dir, "ruta_reales_csv.csv")  # Archivo opcional
 
@@ -44,7 +44,7 @@ def main():
     print(f"--- Filtros aplicados: G >= {MIN_G}, MP_Total >= {MIN_MP_TOTAL} ---")
 
     # --- PASO 1: Carga y Preprocesamiento de datos ---
-    print("\n[PASO 1] Cargando y Preprocesando Datos...")
+    print("\n[PASO 1] Cargando y Preprocesando data...")
     datos_limpios = None
     datos_limpios_con_tm = None
     try:
@@ -54,7 +54,7 @@ def main():
         cargador.preprocesar_datos()  # Limpia los datos (duplicados, nulos, etc.)
         datos_limpios = cargador.obtener_datos_limpiados()
         if datos_limpios is None or datos_limpios.empty: sys.exit("Error preprocesamiento")
-        print(" -> Datos cargados y preprocesados.")
+        print(" -> data cargados y preprocesados.")
         datos_limpios_con_tm = datos_limpios.copy()  # Guarda una copia con la columna 'Tm'
     except Exception as e:
         sys.exit(f"Error Paso 1: {e}")

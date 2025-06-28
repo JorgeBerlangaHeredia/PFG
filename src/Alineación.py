@@ -29,7 +29,7 @@ class Alineación:
             if 'Player' in datos_con_metricas.reset_index().columns:
                 self.datos = datos_con_metricas.reset_index().set_index('Player')
             else:
-                raise ValueError("Datos deben tener 'Player' como índice o columna.")
+                raise ValueError("data deben tener 'Player' como índice o columna.")
 
         # Verifica si las métricas por defecto existen
         if not all(col in self.datos.columns for col in required):
@@ -66,7 +66,7 @@ class Alineación:
                 self.datos['MP_Total'] = self.datos['MP'] * self.datos['G']
             else:
                 missing_filters = [col for col in required_filter_cols if col not in self.datos.columns]
-                raise ValueError(f"Datos deben contener columnas para filtros: {missing_filters}")
+                raise ValueError(f"data deben contener columnas para filtros: {missing_filters}")
 
         print(
             f"Alineacion (Simple/Greedy) creada: tipo='{self.tipo_ali}', métrica='{self.sort_metric}', filtros: G>={self.min_g}, MP_Total>={self.min_mp_total}")
