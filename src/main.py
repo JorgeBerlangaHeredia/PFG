@@ -13,10 +13,10 @@ ARCHIVO_REALES = os.path.join(datos_dir, "ruta_reales_csv.csv")  # Archivo opcio
 
 # Importa las clases del proyecto. Si alguna falta, el programa no puede continuar.
 try:
-    from CargaDatos import CargaDatos
-    from IndicadoresDesempeño import IndicadoresDesempeño
-    from OptimizadorAlineacion import OptimizadorAlineacion
-    from AnalisisResultados import AnalisisResultados
+    from data_loader import CargaDatos
+    from performance_metrics import IndicadoresDesempeño
+    from lineup_optimizer import OptimizadorAlineacion
+    from results_analysis import AnalisisResultados
 except ImportError as e:
     sys.exit(f"Error importando clase: {e}")
 
